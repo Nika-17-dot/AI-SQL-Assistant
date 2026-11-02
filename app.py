@@ -22,8 +22,15 @@ DB_PATH = BASE_DIR / "ecommerce.db"
 
 load_dotenv(BASE_DIR / ".env")
 
-API_KEY = os.getenv("OPENAI_API_KEY")
-MODEL = os.getenv("OPENAI_MODEL", "gpt-6-luna")
+API_KEY = st.secrets.get(
+    "OPENAI_API_KEY",
+    os.getenv("OPENAI_API_KEY")
+)
+
+MODEL = st.secrets.get(
+    "OPENAI_MODEL",
+    os.getenv("OPENAI_MODEL", "gpt-5.6")
+)
 
 st.set_page_config(
     page_title="AI SQL Assistant",
@@ -199,8 +206,22 @@ if not API_KEY:
     st.stop()
 
 if not DB_PATH.exists():
-    st.error(t("database_error"))
-    st.stop()
+    with st.spinner("Creating database... Please wait."):
+        try:
+            import subprocess
+            import sys
+
+            result = subprocess.run(
+                [sys.executable, str(BASE_DIR / "create_db.py")],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            st.success("Database created successfully!")
+
+        except Exception as e:
+            st.error(f"Database creation failed: {e}")
+            st.stop()
 
 client = OpenAI(api_key=API_KEY)
 
